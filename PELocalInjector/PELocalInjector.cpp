@@ -108,12 +108,12 @@ int main() {
 
 	/*
 	4. Update the Base Relocation Table
-*/
+	*/
 
+	DWORD baseRelocationRVA = pExePayloadNTHeaders->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_BASERELOC].VirtualAddress;
+	PIMAGE_BASE_RELOCATION pCurrentBaseRelocation = (PIMAGE_BASE_RELOCATION)(baseRelocationRVA + (LPBYTE)pExePayloadMapped);
 
-	PIMAGE_BASE_RELOCATION pCurrentBaseRelocation = (PIMAGE_BASE_RELOCATION)(pExePayloadNTHeaders->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_BASERELOC].VirtualAddress + (LPBYTE)pExePayloadMapped);
-
-	while (pCurrentBaseRelocation->VirtualAddress != NULL) {
+	while (pCurrentBaseRelocation->VirtualAddress != NULL && baseRelocationRVA != 0) {
 
 		DWORD relocationEntryCount = (pCurrentBaseRelocation->SizeOfBlock - sizeof(IMAGE_BASE_RELOCATION)) / sizeof(IMAGE_RELOC);
 		PIMAGE_RELOC pCurrentBaseRelocationEntry = (PIMAGE_RELOC)((LPBYTE)pCurrentBaseRelocation + sizeof(IMAGE_BASE_RELOCATION));
@@ -136,9 +136,10 @@ int main() {
 		5. Resolve and Update the IAT
 	*/
 
-	PIMAGE_IMPORT_DESCRIPTOR pMappedCurrentDLLImportDescriptor = (PIMAGE_IMPORT_DESCRIPTOR)(pExePayloadNTHeaders->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT].VirtualAddress + (LPBYTE)pExePayloadMapped);
+	DWORD importDescriptorRVA = pExePayloadNTHeaders->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT].VirtualAddress;
+	PIMAGE_IMPORT_DESCRIPTOR pMappedCurrentDLLImportDescriptor = (PIMAGE_IMPORT_DESCRIPTOR)(importDescriptorRVA + (LPBYTE)pExePayloadMapped);
 
-	while (pMappedCurrentDLLImportDescriptor->Name != NULL) {
+	while (pMappedCurrentDLLImportDescriptor->Name != NULL && importDescriptorRVA != 0) {
 		LPSTR currentDLLName = (LPSTR)(pMappedCurrentDLLImportDescriptor->Name + (LPBYTE)pExePayloadMapped);
 		HMODULE hCurrentDLLModule = LoadLibraryA(currentDLLName);
 
